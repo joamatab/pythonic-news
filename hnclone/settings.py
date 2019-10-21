@@ -31,6 +31,7 @@ DEBUG = False
 USE_X_FORWARDED_HOST = True
 ALLOWED_HOSTS = [
     'news.python.sc',
+    'news.psiquantum.lan',
     'localhost',
 ]
 
@@ -166,9 +167,9 @@ LOGIN_REDIRECT_URL = '/'
 
 
 
-ACCEPT_UNINVITED_REGISTRATIONS = False
+ACCEPT_UNINVITED_REGISTRATIONS = True
 
 
-SITE_NAME = 'Pythonic News'
-SITE_URL = 'https://news.python.sc'
-SITE_DOMAIN = 'news.python.sc'
+SITE_NAME = 'PsiNews'
+SITE_URL = 'https://news.psiquantum.lan'
+SITE_DOMAIN = 'news.psiquantum.lan'
