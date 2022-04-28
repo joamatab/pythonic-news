@@ -14,15 +14,19 @@ from .models import CustomUser, Invitation, EmailVerification, PasswordResetRequ
 @receiver(pre_save)
 def lower_email_addresses(sender, instance, **kwargs):
     if isinstance(instance, CustomUser):
-        email = getattr(instance, 'email', None)
-        if email:
+        if email := getattr(instance, 'email', None):
             instance.email = email.lower()
 
 
 @receiver(post_save)
 def send_invitation_email(sender, instance, created, **kwargs):
     if created and isinstance(instance, Invitation):
-        subject, from_email, to = 'You have been invited to %s'%(settings.SITE_DOMAIN), 'bot@python.sc', instance.invited_email_address
+        subject, from_email, to = (
+            f'You have been invited to {settings.SITE_DOMAIN}',
+            'bot@python.sc',
+            instance.invited_email_address,
+        )
+
         text_content = """
 You have been invited to news.python.sc.
 
@@ -42,19 +46,20 @@ news.python.sc - A social news aggregator for the Python community.
 
 @receiver(post_save)
 def create_verification(sender, instance, created, **kwargs):
-    if isinstance(instance, CustomUser):
-        if instance.email:
-            verifications = EmailVerification.objects.filter(user=instance, email=instance.email)
-            if not verifications.count():
-                create_v = True
-            else:
-                verified = any([i.verified for i in verifications])
-                # create_v = not verified
-                create_v = False
-            
-            if create_v:
-                verification = EmailVerification(user=instance, email=instance.email)
-                verification.save()
+    if not isinstance(instance, CustomUser):
+        return
+    if instance.email:
+        verifications = EmailVerification.objects.filter(user=instance, email=instance.email)
+        if not verifications.count():
+            create_v = True
+        else:
+            verified = any(i.verified for i in verifications)
+            # create_v = not verified
+            create_v = False
+
+        if create_v:
+            verification = EmailVerification(user=instance, email=instance.email)
+            verification.save()
 
 
 @receiver(post_save)

@@ -11,22 +11,21 @@ from .models import UserSubscription, AnonymousSubscription, Subscription, UnSub
 
 @receiver(pre_save)
 def lower_email_addresses(sender, instance, **kwargs):
-    if isinstance(instance, (UserSubscription, AnonymousSubscription)):
-        if isinstance(instance, AnonymousSubscription):
-            instance.email = instance.email.lower()
-    if isinstance(instance, Subscription):
-        if instance.verfied_email:
-            instance.verfied_email = instance.verfied_email.lower()
+    if isinstance(
+        instance, (UserSubscription, AnonymousSubscription)
+    ) and isinstance(instance, AnonymousSubscription):
+        instance.email = instance.email.lower()
+    if isinstance(instance, Subscription) and instance.verfied_email:
+        instance.verfied_email = instance.verfied_email.lower()
 
 
 @receiver(post_save)
 def activate_subscription_on_verification(sender, instance, created, **kwargs):
-    if isinstance(instance, AnonymousSubscription):
-        if instance.verified:
-            subscription = instance.subscription_ptr
-            subscription.is_active = True
-            subscription.verfied_email = instance.email
-            subscription.save()
+    if isinstance(instance, AnonymousSubscription) and instance.verified:
+        subscription = instance.subscription_ptr
+        subscription.is_active = True
+        subscription.verfied_email = instance.email
+        subscription.save()
 
 @receiver(post_save)
 def on_subscription_created(sender, instance, created, **kwargs):

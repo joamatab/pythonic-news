@@ -21,13 +21,12 @@ def link_user(user):
 def user_arrows(user, item):
     if user == item.user:
         return ['star']
-    else:
-        res = []
-        if item.can_be_upvoted_by(user=user):
-            res.append('up')
-        if item.can_be_downvoted_by(user=user):
-            res.append('down')
-        return res
+    res = []
+    if item.can_be_upvoted_by(user=user):
+        res.append('up')
+    if item.can_be_downvoted_by(user=user):
+        res.append('down')
+    return res
 
 
 @register.inclusion_tag('news/_more_link_tag.html', takes_context=True)
@@ -36,7 +35,7 @@ def more_link(context):
     page = int(request.GET.get('p', 0))
     query_dict = request.GET.copy()
     query_dict['p'] = page + 1
-    _more_link=request.path_info + '?' + query_dict.urlencode()
+    _more_link = f'{request.path_info}?{query_dict.urlencode()}'
     return {'more_link': _more_link}
 
 

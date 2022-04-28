@@ -64,7 +64,7 @@ class BasicNewsTest(TestCase):
         item_url = response.url
         pk = item_url.split('/')[-1]
 
-        upvote_url = item_url + "/upvote"
+        upvote_url = f"{item_url}/upvote"
 
         request = self.factory.post(upvote_url, {})
         request.user = self.user
@@ -86,7 +86,7 @@ class BasicNewsTest(TestCase):
         item_url = response.url
         pk = item_url.split('/')[-1]
 
-        upvote_url = item_url + "/upvote"
+        upvote_url = f"{item_url}/upvote"
 
         request = self.factory.post(upvote_url, {})
         request.user = self.user
@@ -111,7 +111,7 @@ class BasicNewsTest(TestCase):
         item_url = response.url
         pk = item_url.split('/')[-1]
 
-        vote_url = item_url + "/downvote"
+        vote_url = f"{item_url}/downvote"
 
         request = self.factory.post(vote_url, {})
         request.user = self.user
@@ -127,7 +127,7 @@ class BasicNewsTest(TestCase):
         item_url = response.url
         pk = item_url.split('/')[-1]
 
-        upvote_url = item_url + "/upvote"
+        upvote_url = f"{item_url}/upvote"
 
         request = self.factory.post(upvote_url, {})
         request.user = self.user
@@ -182,10 +182,10 @@ class BasicNewsTest(TestCase):
         request.user = self.user
         response = item(request, pk=submission.pk)
         self.assertEqual(response.status_code, 302)
-        
+
         self.assertEqual(Story.objects.get(pk=submission.pk).num_comments, 1)
 
-        request = self.factory.get('/item/'+str(submission.pk))
+        request = self.factory.get(f'/item/{str(submission.pk)}')
         request.user = self.user
         response = item(request, pk=submission.pk)
         self.assertContains(response, "ACOMMENT")
@@ -204,7 +204,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(comment.text, 'A Comment')
 
-        url = '/item/%s/edit'%(comment.pk)
+        url = f'/item/{comment.pk}/edit'
         request = self.factory.post(url, {'text': 'B Comment'})
         request.user = self.user
         response = item_edit(request, pk=comment.pk)
@@ -226,7 +226,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(comment.text, 'A Comment')
 
-        url = '/item/%s/edit'%(comment.pk)
+        url = f'/item/{comment.pk}/edit'
         request = self.factory.post(url, {'text': 'B Comment'})
         request.user = self.user
         response = item_edit(request, pk=comment.pk)
@@ -242,7 +242,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(_item.text, 'Bla')
 
-        url = '/item/%s/edit'%(_item.pk)
+        url = f'/item/{_item.pk}/edit'
         request = self.factory.post(url, {'text': 'B Comment'})
         request.user = self.user
         response = item_edit(request, pk=_item.pk)
@@ -258,7 +258,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(_item.text, 'Bla')
 
-        url = '/item/%s/edit'%(_item.pk)
+        url = f'/item/{_item.pk}/edit'
         request = self.factory.post(url, {'url': 'https://example.org'})
         request.user = self.user
         response = item_edit(request, pk=_item.pk)
@@ -277,7 +277,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(_item.text, 'Bla')
 
-        url = '/item/%s/edit'%(_item.pk)
+        url = f'/item/{_item.pk}/edit'
         request = self.factory.post(url, {'text': 'B Comment'})
         request.user = self.user
         response = item_edit(request, pk=_item.pk)
@@ -296,7 +296,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(comment.text, 'A Comment')
 
-        url = '/item/%s/edit'%(comment.pk)
+        url = f'/item/{comment.pk}/edit'
         request = self.factory.post(url, {'text': 'B Comment'})
         request.user = self.other_user
         response = item_edit(request, pk=comment.pk)
@@ -311,7 +311,7 @@ class BasicNewsTest(TestCase):
 
         self.assertEqual(_item.text, 'Bla')
 
-        url = '/item/%s/edit'%(_item.pk)
+        url = f'/item/{_item.pk}/edit'
         request = self.factory.post(url, {'text': 'B Comment'})
         request.user = self.other_user
         response = item_edit(request, pk=_item.pk)
@@ -327,7 +327,7 @@ class BasicNewsTest(TestCase):
         comment = Comment(to_story=story, user=self.user, text="a comment")
         comment.save()
 
-        url = '/item/%s/delete'%(comment.pk)
+        url = f'/item/{comment.pk}/delete'
         request = self.factory.get(url)
         request.user = self.user
         response = item_delete(request, pk=comment.pk)
@@ -354,7 +354,7 @@ class BasicNewsTest(TestCase):
         comment2 = Comment(to_story=story, user=self.user, text="another comment", parent=comment)
         comment2.save()
 
-        url = '/item/%s/delete'%(comment.pk)
+        url = f'/item/{comment.pk}/delete'
         request = self.factory.get(url)
         request.user = self.user
         response = item_delete(request, pk=comment.pk)
@@ -375,7 +375,7 @@ class BasicNewsTest(TestCase):
         story.save()
 
 
-        url = '/item/%s/delete'%(story.pk)
+        url = f'/item/{story.pk}/delete'
         request = self.factory.get(url)
         request.user = self.user
         response = item_delete(request, pk=story.pk)
@@ -399,7 +399,7 @@ class BasicNewsTest(TestCase):
         comment = Comment(to_story=story, user=self.user, text="a comment")
         comment.save()
 
-        url = '/item/%s/delete'%(comment.pk)
+        url = f'/item/{comment.pk}/delete'
         request = self.factory.get(url)
         request.user = self.other_user
         response = item_delete(request, pk=comment.pk)
@@ -419,7 +419,7 @@ class BasicNewsTest(TestCase):
         story = Story(title='A story', user=self.user, url="https://example.org")
         story.save()
 
-        url = '/item/%s/delete'%(story.pk)
+        url = f'/item/{story.pk}/delete'
         request = self.factory.get(url)
         request.user = self.other_user
         response = item_delete(request, pk=story.pk)

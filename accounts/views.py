@@ -27,13 +27,12 @@ def my_profile(request):
     form = ProfileForm(request.POST or None, instance=instance)
     if request.user.email:
         verifications = EmailVerification.objects.filter(user=request.user, email=request.user.email)
-        verified = any([i.verified for i in verifications])
+        verified = any(i.verified for i in verifications)
     else:
         verified = False
-    if request.method == 'POST':
-        if form.is_valid():
-            instance = form.save()
-            return HttpResponseRedirect(instance.get_absolute_url())
+    if request.method == 'POST' and form.is_valid():
+        instance = form.save()
+        return HttpResponseRedirect(instance.get_absolute_url())
     return render(request, 'accounts/my_profile.html', {'form': form, 'verified': verified})
 
 
@@ -41,10 +40,9 @@ def my_profile(request):
 def create_invite(request):
     instance = Invitation(inviting_user = request.user)
     form = CreateInviteForm(request.POST or None, instance=instance)
-    if request.method=="POST":
-        if form.is_valid():
-            instance = form.save()
-            return HttpResponseRedirect(instance.get_absolute_url())
+    if request.method == "POST" and form.is_valid():
+        instance = form.save()
+        return HttpResponseRedirect(instance.get_absolute_url())
     return render(request, 'accounts/create_invite.html', {'form': form})
 
 
@@ -66,14 +64,13 @@ def register(request):
     if not settings.ACCEPT_UNINVITED_REGISTRATIONS and (invitation is None or not getattr(invitation, 'active', False)):
         return render(request, 'accounts/register_closed.html')
     form = RegisterForm(request.POST or None, instance=instance)
-    if request.method == 'POST':
-        if form.is_valid():
-            instance = form.save()
-            instance.set_password(form.cleaned_data['password'])
-            instance.is_active = True
-            instance.save()
-            login(request, instance)
-            return HttpResponseRedirect(instance.get_absolute_url())
+    if request.method == 'POST' and form.is_valid():
+        instance = form.save()
+        instance.set_password(form.cleaned_data['password'])
+        instance.is_active = True
+        instance.save()
+        login(request, instance)
+        return HttpResponseRedirect(instance.get_absolute_url())
     return render(request, 'accounts/register.html', {'form': form})
 
 
@@ -126,20 +123,18 @@ def password_forgotten(request, verification_code=None):
     else:
         reset_request = get_object_or_404(PasswordResetRequest, verification_code=verification_code)
         form = PasswortResetForm(request.POST or None)
-        if request.method=="POST":
-            if form.is_valid():
-                reset_request.user.set_password(form.cleaned_data['password']) # TODO: confirm password, password rules
-                reset_request.user.save()
-                return HttpResponseRedirect(reverse('/login'))
+        if request.method == "POST" and form.is_valid():
+            reset_request.user.set_password(form.cleaned_data['password']) # TODO: confirm password, password rules
+            reset_request.user.save()
+            return HttpResponseRedirect(reverse('/login'))
         return render(request, 'accounts/password_forgotten_form.html', {'form': form})
 
 
 @login_required
 def logout(request):
-    if request.method=="POST":
-        do_logout(request)
-        redirect_url = settings.LOGOUT_REDIRECT_URL or '/'
-        return HttpResponseRedirect(redirect_url)
-    else:
+    if request.method != "POST":
         return render(request, 'accounts/logout.html')
+    do_logout(request)
+    redirect_url = settings.LOGOUT_REDIRECT_URL or '/'
+    return HttpResponseRedirect(redirect_url)
 

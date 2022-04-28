@@ -52,10 +52,11 @@ class Item(MPTTModel):
             return False
         if user == self.user:
             return False
-        else:
-            if user.karma > 1:
-                if not Vote.objects.filter(user=user, item=self).count():
-                    return True
+        if (
+            user.karma > 1
+            and not Vote.objects.filter(user=user, item=self).count()
+        ):
+            return True
         return False
 
     def can_be_edited_by(self, user):

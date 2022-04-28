@@ -43,7 +43,3 @@ class UnsunscribeForm(forms.Form):
 
 def get_subscription_form(user, *args, **kwargs):
     return AnonymousSubscriptionForm(*args, **kwargs)
-    if user.is_authenticated:
-        return UserSubscriptionForm(*args, **kwargs)
-    else:
-        return AnonymousSubscriptionForm(*args, **kwargs)
