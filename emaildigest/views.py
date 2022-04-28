@@ -11,11 +11,14 @@ from .models import AnonymousSubscription, UnSubscription, Subscription, EmailDi
 
 def subscribe(request):
     form = get_subscription_form(request.user, request.POST or None)
-    thankyou = request.GET.get('thankyou', None)
-    if thankyou:
-        return render(request, 'emaildigest/subscribe_thankyou_%s.html'%(thankyou), {'prevent_footer_subscription_form': True})
-    verification_code = request.GET.get('v', None)
-    if verification_code:
+    if thankyou := request.GET.get('thankyou', None):
+        return render(
+            request,
+            f'emaildigest/subscribe_thankyou_{thankyou}.html',
+            {'prevent_footer_subscription_form': True},
+        )
+
+    if verification_code := request.GET.get('v', None):
         subscription = get_object_or_404(AnonymousSubscription, verification_code=verification_code)
         if not subscription.verified:
             subscription.verified = True
@@ -23,13 +26,12 @@ def subscribe(request):
             subscription.save()
         # TODO: Verify User account if needed # TODO: Activate usage of get_subsciption_form
         return render(request, 'emaildigest/subscribe_verification_done.html', {'prevent_footer_subscription_form': True})
-    if request.method=="POST":
-        if form.is_valid():
-            subscription = form.save()
-            if request.user.is_authenticated:
-                subscription.logged_in_user = request.user
-                subscription.save()
-            return HttpResponseRedirect(reverse('emaildigest_subscribe') + '?thankyou=' + form.thankyou)
+    if request.method == "POST" and form.is_valid():
+        subscription = form.save()
+        if request.user.is_authenticated:
+            subscription.logged_in_user = request.user
+            subscription.save()
+        return HttpResponseRedirect(reverse('emaildigest_subscribe') + '?thankyou=' + form.thankyou)
     return render(request, 'emaildigest/subscribe.html', {'subscription_form': form, 'prevent_footer_subscription_form': True})
 
 
@@ -40,14 +42,13 @@ def unsubscribe(request, subscription_id=None, digest_id=None):
         return render(request, 'emaildigest/unsubscribe_done.html', {'email': email, 'subscription': subscription, 'prevent_footer_subscription_form': True})
     if subscription_id is None and digest_id is None:
         form = UnsunscribeForm(request.POST or None)
-        if request.method=="POST":
-            if form.is_valid():
-                email = form.cleaned_data['email']
-                subscriptions = Subscription.objects.filter(verfied_email=email, is_active=True)
-                for subscription in subscriptions:
-                    unsubscription = UnSubscription(subscription=subscription)
-                    unsubscription.save()
-                return HttpResponseRedirect(reverse('emaildigest_unsubscribe') + "?done&email="+email)
+        if request.method == "POST" and form.is_valid():
+            email = form.cleaned_data['email']
+            subscriptions = Subscription.objects.filter(verfied_email=email, is_active=True)
+            for subscription in subscriptions:
+                unsubscription = UnSubscription(subscription=subscription)
+                unsubscription.save()
+            return HttpResponseRedirect(reverse('emaildigest_unsubscribe') + "?done&email="+email)
         return render(request, 'emaildigest/unsubscribe.html', {'form': form, 'prevent_footer_subscription_form': True})
     elif subscription_id is not None and digest_id is not None:
         subscription = get_object_or_404(Subscription, pk=subscription_id)
@@ -62,7 +63,6 @@ def unsubscribe(request, subscription_id=None, digest_id=None):
             return HttpResponseRedirect(reverse('emaildigest_unsubscribe'))
     else:
         return HttpResponseRedirect(reverse('emaildigest_unsubscribe'))
-    pass
 
 
 def my_subscriptions(request):

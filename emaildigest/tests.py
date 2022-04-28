@@ -41,7 +41,7 @@ class BasicEmailDigestTest(TestCase):
         self.assertFalse(subscription.is_active)
         verification_code = subscription.anonymoussubscription.verification_code
 
-        url = '/digest/subscribe?v=' + str(verification_code)
+        url = f'/digest/subscribe?v={str(verification_code)}'
 
         request = self.factory.get(url)
         request.user = self.user
@@ -70,8 +70,7 @@ class BasicEmailDigestTest(TestCase):
 
         self.assertEqual(UnSubscription.objects.all().count(), 1)
 
-        unsubscription = UnSubscription.objects.get()
-        return unsubscription
+        return UnSubscription.objects.get()
 
 
     def test_subscribe(self):

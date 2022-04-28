@@ -37,7 +37,8 @@ class CustomUser(AbstractUser, MPTTModel):
     def gravatar_url(self, size=80):
         if self.email:
             default = "https://www.example.com/default.jpg"
-            url = "https://www.gravatar.com/avatar/" + hashlib.md5(self.email.lower()).hexdigest() + "?"
+            url = f"https://www.gravatar.com/avatar/{hashlib.md5(self.email.lower()).hexdigest()}?"
+
             url += urlencode({'d':default, 's':str(size)})
             return url
 
@@ -69,7 +70,6 @@ class Invitation(models.Model):
     @property
     def active(self):
         return True
-        pass # TODO
 
 
 class EmailVerification(models.Model):

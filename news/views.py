@@ -46,21 +46,18 @@ from django.db import connection
 def _one_page_back(request):
     page = int(request.GET.get('p', 0))
     query_dict = request.GET.copy()
-    page = page - 1
+    page -= 1
     if page >= 0:
         query_dict['p'] = page
     else:
         return None
-    _more_link=request.path_info + '?' + query_dict.urlencode()
+    _more_link = f'{request.path_info}?{query_dict.urlencode()}'
     return HttpResponseRedirect(_more_link)
 
 def _front_page(paging_size=settings.PAGING_SIZE, page=0, add_filter={}, add_q=[], as_of=None, days_back=50):
     # TODO: weighting https://medium.com/hacking-and-gonzo/how-hacker-news-ranking-algorithm-works-1d9b0cf2c08d
     # (P-1) / (T+2)^G
-    if as_of is None:
-        now = timezone.now()
-    else:
-        now = as_of
+    now = timezone.now() if as_of is None else as_of
     if connection.vendor == 'postgresql':
         now_value = Value(now, output_field=fields.DateTimeField())
         submission_age_float = ExpressionWrapper(  ( now_value - F('created_at')), output_field=fields.DurationField())
@@ -97,8 +94,10 @@ def _front_page(paging_size=settings.PAGING_SIZE, page=0, add_filter={}, add_q=[
                 .annotate(g=Value(1.8, output_field=fields.FloatField())) \
                 .annotate(formula=formula) \
                 .order_by('-formula')[(page*paging_size):(page+1)*(paging_size)]
-    else: 
-        raise NotImplementedError("No frontpage magic for database engine %s implemented"%(connection.vendor))
+    else:
+        raise NotImplementedError(
+            f"No frontpage magic for database engine {connection.vendor} implemented"
+        )
 
 
 def _newest(paging_size=settings.PAGING_SIZE, page=0, add_filter={}, add_q=[]):
@@ -113,10 +112,14 @@ def _newest(paging_size=settings.PAGING_SIZE, page=0, add_filter={}, add_q=[]):
 @ratelimit(key="user_or_ip", group="news-get", rate=DEFAULT_GET_RATE, block=True)
 def index(request):
     page = int(request.GET.get('p', 0))
-    stories = cache.get_or_set("news-index-%s"%(page), lambda: list(_front_page(page=page)), timeout=TIMEOUT_MEDIUM) # one minute
+    stories = cache.get_or_set(
+        f"news-index-{page}",
+        lambda: list(_front_page(page=page)),
+        timeout=TIMEOUT_MEDIUM,
+    )
+
     if len(stories) < 1 and page != 0:
-        back = _one_page_back(request)
-        if back:
+        if back := _one_page_back(request):
             return back
     return render(request, 'news/index.html', {'stories': stories, 'hide_text':True, 'page': page, 'rank_start': page*settings.PAGING_SIZE})
 
@@ -124,10 +127,14 @@ def index(request):
 @ratelimit(key="user_or_ip", group="news-get", rate=DEFAULT_GET_RATE, block=True)
 def show(request):
     page = int(request.GET.get('p', 0))
-    stories = cache.get_or_set("news-show-%s"%(page), lambda: list(_front_page(page=page, add_filter={'is_show': True})), timeout=TIMEOUT_MEDIUM) # one minute
+    stories = cache.get_or_set(
+        f"news-show-{page}",
+        lambda: list(_front_page(page=page, add_filter={'is_show': True})),
+        timeout=TIMEOUT_MEDIUM,
+    )
+
     if len(stories) < 1 and page != 0:
-        back = _one_page_back(request)
-        if back:
+        if back := _one_page_back(request):
             return back
     return render(request, 'news/index.html', {'stories': stories, 'hide_text':True, 'page': page, 'rank_start': page*settings.PAGING_SIZE})
 
@@ -136,10 +143,9 @@ def show(request):
 def ask(request):
     page = int(request.GET.get('p', 0))
     stories = lambda: list(_front_page(page=page, add_filter={'is_ask': True}))
-    stories = cache.get_or_set("news-ask-%s"%(page), stories, timeout=TIMEOUT_MEDIUM) # one minute
+    stories = cache.get_or_set(f"news-ask-{page}", stories, timeout=TIMEOUT_MEDIUM)
     if len(stories) < 1 and page != 0:
-        back = _one_page_back(request)
-        if back:
+        if back := _one_page_back(request):
             return back
     return render(request, 'news/index.html', {'stories': stories, 'hide_text':True, 'page': page, 'rank_start': page*settings.PAGING_SIZE})
 
@@ -166,10 +172,12 @@ def newest(request): # Done
     if 'site' in request.GET.keys():
         add_filter['domain'] = request.GET['site']
     stories = lambda: list(_newest(page=page, add_filter=add_filter, add_q=add_q))
-    stories = cache.get_or_set("news-newest-%s"%(page), stories, timeout=TIMEOUT_SHORT) # two seconds
+    stories = cache.get_or_set(
+        f"news-newest-{page}", stories, timeout=TIMEOUT_SHORT
+    )
+
     if len(stories) < 1 and page != 0:
-        back = _one_page_back(request)
-        if back:
+        if back := _one_page_back(request):
             return back
     return render(request, 'news/index.html', {'stories': stories, 'hide_text':True, 'page': page, 'rank_start': page*settings.PAGING_SIZE})
 
@@ -192,8 +200,7 @@ def threads(request):
         '-created_at'
     )[(page*paging_size):(page+1)*(paging_size)]
     if len(stories) < 1 and page != 0:
-        back = _one_page_back(request)
-        if back:
+        if back := _one_page_back(request):
             return back
     return render(request, 'news/index.html', {'stories': stories, 'hide_text':False, 'page': page, 'rank_start': None, 'show_children': True})
 
@@ -228,8 +235,7 @@ def comments(request): # TODO
         'created_at'
     )[(page*paging_size):(page+1)*(paging_size)]
     if len(stories) < 1 and page != 0:
-        back = _one_page_back(request)
-        if back:
+        if back := _one_page_back(request):
             return back
     return render(request, 'news/index.html', {'stories': stories, 'hide_text':False, 'page': page, 'rank_start': page*paging_size})
 
@@ -245,19 +251,19 @@ def _vote(request, pk, vote=None, unvote=False):
     if (not unvote) and (vote is not None):
         votes = Vote.objects.filter(item=item, user=request.user)
         if request.method=="POST":
-            if vote > 0:
-                if not item.can_be_upvoted_by(request.user):
-                    return HttpResponseForbidden()
-            else:
-                if not item.can_be_downvoted_by(request.user):
-                    return HttpResponseForbidden()
+            if (
+                vote > 0
+                and not item.can_be_upvoted_by(request.user)
+                or vote <= 0
+                and not item.can_be_downvoted_by(request.user)
+            ):
+                return HttpResponseForbidden()
             vote = Vote(vote=vote, item=item, user=request.user)
             vote.save()
-            return HttpResponse("OK %s"%(vote.pk))
-    if unvote:
-        if request.method=="POST":
-            Vote.objects.filter(item=item, user=request.user).delete()
-            return HttpResponse("OK")
+            return HttpResponse(f"OK {vote.pk}")
+    if unvote and request.method == "POST":
+        Vote.objects.filter(item=item, user=request.user).delete()
+        return HttpResponse("OK")
 
 
 @login_required
@@ -313,17 +319,15 @@ def _item_story_comment(pk):
 @ratelimit(key="user_or_ip", group="news-post", rate=DEFAULT_POST_RATE, method=['POST'], block=True)
 def item(request, pk): # DONE
     item, story, comment = _item_story_comment(pk)
-    if story == item:
-        if story.duplicate_of is not None:
-            return HttpResponseRedirect(story.duplicate_of.get_absolute_url())
+    if story == item and story.duplicate_of is not None:
+        return HttpResponseRedirect(story.duplicate_of.get_absolute_url())
     if request.user.is_authenticated:
         parent = None if story==item else item
         comment_instance = Comment(user=request.user, to_story=story, parent=parent)
         comment_form = CommentForm(request.POST or None, instance=comment_instance)
-        if request.method == 'POST':
-            if comment_form.is_valid():
-                comment = comment_form.save()
-                return HttpResponseRedirect(story.get_absolute_url() + '#' + str(comment.pk))
+        if request.method == 'POST' and comment_form.is_valid():
+            comment = comment_form.save()
+            return HttpResponseRedirect(f'{story.get_absolute_url()}#{str(comment.pk)}')
     else:
         comment_form = None
     return render(request, 'news/item.html', {'item': item, 'comment_form': comment_form})
@@ -336,19 +340,17 @@ def item_edit(request, pk):
     item, story, comment = _item_story_comment(pk)
     if not item.can_be_edited_by(request.user):
         return HttpResponseForbidden()
-    if story == item:
-        if story.duplicate_of is not None:
-            return HttpResponseRedirect(story.duplicate_of.get_absolute_url())
+    if story == item and story.duplicate_of is not None:
+        return HttpResponseRedirect(story.duplicate_of.get_absolute_url())
     if comment is not None:
         form = CommentForm(request.POST or None, instance=item)
     else:
         assert story is not None
         form = StoryForm(request.POST or None, instance=item)
     assert form is not None
-    if request.method=="POST":
-        if form.is_valid():
-            item = form.save()
-            return HttpResponseRedirect(story.get_absolute_url() + '#' + str(item.pk))
+    if request.method == "POST" and form.is_valid():
+        item = form.save()
+        return HttpResponseRedirect(f'{story.get_absolute_url()}#{str(item.pk)}')
     return render(request, 'news/item_edit.html', {'item': item, 'edit_form': form})
 
 
@@ -360,9 +362,7 @@ def item_delete(request, pk):
     if not item.can_be_deleted_by(request.user):
         return HttpResponseForbidden()
     if request.method == "POST":
-        redirect_url = '/'
-        if comment is not None:
-            redirect_url = item.to_story.get_absolute_url()
+        redirect_url = item.to_story.get_absolute_url() if comment is not None else '/'
         item.delete()
         return HttpResponseRedirect(redirect_url)
     return render(request, 'news/item_delete.html', {'item': item})
@@ -378,10 +378,9 @@ def submit(request): # DONE
         'url': request.GET.get('u'),
         'text': request.GET.get('x'),
     }, instance=instance)
-    if request.method=="POST":
-        if form.is_valid():
-            instance = form.save()
-            return HttpResponseRedirect(instance.get_absolute_url())
+    if request.method == "POST" and form.is_valid():
+        instance = form.save()
+        return HttpResponseRedirect(instance.get_absolute_url())
     return render(request, 'news/submit.html', {'form': form})
 
 
